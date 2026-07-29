@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data / models / outputs — commit code, not data
+data/
+outputs/
+runs/
+*.pt
+*.pth
+*.pkl
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# LaTeX build artifacts (if the thesis source lives here; note *.pdf is NOT ignored)
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+*.fdb_latexmk
+*.fls
