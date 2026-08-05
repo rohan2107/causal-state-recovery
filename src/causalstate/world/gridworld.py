@@ -5,6 +5,8 @@ from gymnasium.spaces import Box
 from minigrid.core.world_object import Door, Goal, Key, Wall
 from minigrid.envs import DoorKeyEnv
 
+from causalstate.world.spurious import corrupt
+
 OBS_DIM = 9
 
 VAR_SLICES = {
@@ -49,6 +51,8 @@ class FactoredGridWorld(DoorKeyEnv):
     def __init__(
         self,
         noise_std: float = 1.0,
+        rho: float = 0.7,
+        layout_seed: int = 2,
         max_steps: int = 360,
         render_mode: str | None = None,
     ):
@@ -59,6 +63,8 @@ class FactoredGridWorld(DoorKeyEnv):
         )
 
         self.noise_std = noise_std
+        self.rho = rho
+        self.layout_seed = layout_seed
 
         self.observation_space = Box(
             low=OBS_LOW,
@@ -144,8 +150,34 @@ class FactoredGridWorld(DoorKeyEnv):
         return self.extract_state()
 
     def _gen_grid(self, width: int, height: int) -> None:
-        super()._gen_grid(width, height)
+        episode_rng = self.np_random
+        self.np_random = np.random.default_rng(self.layout_seed)
+        try:
+            super()._gen_grid(width, height)
+        finally:
+            self.np_random = episode_rng
+
         self._locate_objects()
+        door_col = self._door_pos[0]
+        self.place_agent(
+            top=(1, 0),
+            size=(door_col - 1, height),
+        )
+        self.grid.set(
+            self._goal_pos[0],
+            self._goal_pos[1],
+            None,
+        )
+        goal = Goal()
+        goal_pos = self.place_obj(
+            goal,
+            top=(door_col + 1, 1),
+            size=(width - door_col - 2, height - 2),
+        )
+        self._goal_pos = (
+            int(goal_pos[0]),
+            int(goal_pos[1])
+        )
 
     def _apply_state_clamps(self) -> None:
         for var in ("s0", "s1", "s2", "s3"):
@@ -154,7 +186,11 @@ class FactoredGridWorld(DoorKeyEnv):
 
     def _resample_nuisance(self) -> None:
         self._s4 = self.np_random.normal(0.0, self.noise_std)
-        self._s5 = 0.0
+        self._s5 = corrupt(
+            int(self._door.is_open),
+            self.rho,
+            self.np_random,
+        )
 
     def _apply_nuisance_clamps(self) -> None:
         for var in ("s4", "s5"):

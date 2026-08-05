@@ -35,12 +35,12 @@ def test_observation_slots(env):
     assert len(get_var(obs, "s0")) == 3
     assert get_var(obs, "s1").item() == 0.0
     assert get_var(obs, "s2").item() == 0.0
-    np.testing.assert_array_equal(
-        get_var(obs, "s3"),
-        np.array([4.0, 4.0], dtype=np.float32),
-    )
+    goal = get_var(obs, "s3")
+    assert goal[0] > env._door_pos[0]
+    assert 1 <= goal[0] <= 4
+    assert 1 <= goal[1] <= 4
     assert np.isfinite(get_var(obs, "s4").item())
-    assert get_var(obs, "s5").item() == 0.0
+    assert get_var(obs, "s5").item() in (0.0, 1.0)
     covered = set()
     for var in ALL_VARS:
         covered.update(range(*VAR_SLICES[var].indices(OBS_DIM)))
@@ -54,8 +54,11 @@ def test_seed2_layout(env):
     assert not env._door.is_open
 
     assert positions_of(env, Key) == [(1, 4)]
-    assert positions_of(env, Goal) == [(4, 4)]
-
+    goals = positions_of(env, Goal)
+    assert len(goals) == 1
+    goal = goals[0]
+    assert goal[0] > env._door_pos[0]
+    assert 1 <= goal[1] <= 4
     assert isinstance(env.grid.get(3, 1), Wall)
     assert isinstance(env.grid.get(3, 3), Wall)
     assert isinstance(env.grid.get(3, 4), Wall)
@@ -99,6 +102,7 @@ def test_scripted_solve(env):
     env.reset(seed=DEFAULT_LAYOUT_SEED)
 
     env.do("s0", (2, 2, 0))
+    env.do("s3", (4, 4))
 
     obs, *_ = env.step(A.toggle)
     assert get_var(obs, "s2").item() == 0.0
@@ -228,3 +232,154 @@ def test_intervention_domain(env):
     assert env.intervention_domain("s5") == (0, 1)
 
     assert env.intervention_domain("s4") is None
+
+def test_s5_tracks_s2_at_rho_1():
+    env = FactoredGridWorld(rho=1.0)
+    A = env.actions
+
+    env.reset(seed=DEFAULT_LAYOUT_SEED)
+    env.do("s0", (2, 2, 0))
+    env.do("s3", (4, 4))
+
+    s2_seen = set()
+
+    obs, *_ = env.step(A.toggle)
+    s2_seen.add(get_var(obs, "s2").item())
+    assert get_var(obs, "s5").item() == get_var(obs, "s2").item()
+
+    env.do("s1", 1)
+
+    for action in (
+        A.toggle,
+        A.forward,
+        A.forward,
+        A.right,
+        A.forward,
+        A.forward,
+    ):
+        obs, *_ = env.step(action)
+        s2 = get_var(obs, "s2").item()
+        s5 = get_var(obs, "s5").item()
+
+        s2_seen.add(s2)
+        assert s5 == s2
+
+    assert s2_seen == {0.0, 1.0}
+
+def test_s5_inverts_s2_at_rho_0():
+    env = FactoredGridWorld(rho=0.0)
+    A = env.actions
+
+    env.reset(seed=DEFAULT_LAYOUT_SEED)
+    env.do("s0", (2, 2, 0))
+    env.do("s3", (4, 4))
+
+    s2_seen = set()
+
+    obs, *_ = env.step(A.toggle)
+    s2_seen.add(get_var(obs, "s2").item())
+    assert get_var(obs, "s5").item() == 1.0 - get_var(obs, "s2").item()
+
+    env.do("s1", 1)
+
+    for action in (
+        A.toggle,
+        A.forward,
+        A.forward,
+        A.right,
+        A.forward,
+        A.forward,
+    ):
+        obs, *_ = env.step(action)
+        s2 = get_var(obs, "s2").item()
+        s5 = get_var(obs, "s5").item()
+
+        s2_seen.add(s2)
+        assert s5 == 1.0 - s2
+
+    assert s2_seen == {0.0, 1.0}
+
+def test_s5_hold_clamp():
+    env = FactoredGridWorld(rho=1.0)
+    A = env.actions
+
+    env.reset(seed=DEFAULT_LAYOUT_SEED)
+    env.do("s5", 1, hold=True)
+
+    for _ in range(10):
+        obs, *_ = env.step(A.forward)
+        assert get_var(obs, "s5").item() == 1.0
+        assert get_var(obs, "s2").item() == 0.0
+
+def test_layout_seed_fixed():
+    starts = set()
+    goals = set()
+
+    for seed in range(50):
+        env = FactoredGridWorld(layout_seed=2)
+        env.reset(seed=seed)
+
+        starts.add(tuple(env.agent_pos))
+        goals.add(env._goal_pos)
+
+        assert env._door_pos == (3, 2)
+        assert positions_of(env, Key) == [(1, 4)]
+
+        assert env.agent_pos[0] < env._door_pos[0]
+        assert env._goal_pos[0] == 4
+
+    assert len(starts) > 1
+    assert len(goals) > 1
+
+def test_layout_seed_changes_layout():
+    env = FactoredGridWorld(layout_seed=9)
+    env.reset(seed=0)
+
+    assert env._door_pos == (2, 2)
+    assert positions_of(env, Key) == [(1, 1)]
+
+    assert len(env.intervention_domain("s3")) == 8
+
+def test_layout_seed_determinism():
+    env1 = FactoredGridWorld(layout_seed=2)
+    env2 = FactoredGridWorld(layout_seed=2)
+
+    actions = [
+        env1.actions.forward,
+        env1.actions.pickup,
+        env1.actions.forward,
+        env1.actions.right,
+        env1.actions.forward,
+    ]
+
+    obs1, _ = env1.reset(seed=11)
+    obs2, _ = env2.reset(seed=11)
+
+    trace1 = [obs1.copy()]
+    trace2 = [obs2.copy()]
+
+    for action in actions:
+        obs1, *_ = env1.step(action)
+        obs2, *_ = env2.step(action)
+
+        trace1.append(obs1.copy())
+        trace2.append(obs2.copy())
+
+    assert np.array_equal(
+        np.stack(trace1),
+        np.stack(trace2),
+    )
+
+def test_s5_reads_clamped_s2():
+    env = FactoredGridWorld(rho=1.0)
+    A = env.actions
+
+    env.reset(seed=DEFAULT_LAYOUT_SEED)
+
+    env.do("s2", 1, hold=True)
+
+    for _ in range(10):
+        obs, *_ = env.step(A.forward)
+
+        assert get_var(obs, "s2").item() == 1.0
+        assert get_var(obs, "s5").item() == 1.0
