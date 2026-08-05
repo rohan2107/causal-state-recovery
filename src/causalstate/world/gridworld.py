@@ -51,7 +51,7 @@ class FactoredGridWorld(DoorKeyEnv):
     def __init__(
         self,
         noise_std: float = 1.0,
-        rho: float = 0.7,
+        rho: float | None = None,
         layout_seed: int = 2,
         max_steps: int = 360,
         render_mode: str | None = None,
@@ -186,11 +186,14 @@ class FactoredGridWorld(DoorKeyEnv):
 
     def _resample_nuisance(self) -> None:
         self._s4 = self.np_random.normal(0.0, self.noise_std)
-        self._s5 = corrupt(
-            int(self._door.is_open),
-            self.rho,
-            self.np_random,
-        )
+        if self.rho is None:
+            self._s5 = 0.0
+        else:
+            self._s5 = corrupt(
+                int(self._door.is_open),
+                self.rho,
+                self.np_random,
+            )
 
     def _apply_nuisance_clamps(self) -> None:
         for var in ("s4", "s5"):
@@ -211,6 +214,9 @@ class FactoredGridWorld(DoorKeyEnv):
     def step(self, action) -> tuple[np.ndarray, float, bool, bool, dict]:
         _, reward, terminated, truncated, info = super().step(action)
         self._settle()
+        info["Y"] = int(
+            terminated and tuple(self.agent_pos) == self._goal_pos
+        )
         return self.extract_state(), reward, terminated, truncated, info
 
     def _validate_binary(self, var, value) -> int:

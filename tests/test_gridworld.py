@@ -126,9 +126,10 @@ def test_scripted_solve(env):
     obs, *_ = env.step(A.forward)
     assert tuple(env.agent_pos) == (4, 3)
 
-    obs, reward, terminated, truncated, _ = env.step(A.forward)
+    obs, reward, terminated, truncated, info = env.step(A.forward)
 
     assert terminated
+    assert info["Y"] == 1
     assert not truncated
     assert reward == 0.98250
 
@@ -383,3 +384,9 @@ def test_s5_reads_clamped_s2():
 
         assert get_var(obs, "s2").item() == 1.0
         assert get_var(obs, "s5").item() == 1.0
+
+def test_Y_zero_before_goal():
+    env = FactoredGridWorld()
+    obs, _ = env.reset(seed=DEFAULT_LAYOUT_SEED)
+    obs, reward, terminated, truncated, info = env.step(env.actions.left)
+    assert info["Y"] == 0

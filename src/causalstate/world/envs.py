@@ -14,7 +14,7 @@ from causalstate.world.gridworld import (
 def make_env(
     start_seed=None,
     layout_seed=2,
-    rho=0.7,
+    rho=None,
     noise_std=1.0,
     max_steps=360,
     **kwargs,
