@@ -36,7 +36,7 @@ def collect_observational(
     start_seed: int = 777,
     rng: np.random.Generator | None = None,
 ) -> dict[str, np.ndarray]:
-    
+
     if rng is None:
         rng = np.random.default_rng(0)
 
@@ -105,7 +105,7 @@ def split_by_episode(
     val_frac: float = 0.15,
     seed: int = 0,
 ) -> dict[str, dict[str, np.ndarray]]:
-    
+
     rng = np.random.default_rng(seed)
 
     episode_ids = np.unique(dataset["episode_id"])

@@ -108,7 +108,7 @@ class FactoredGridWorld(DoorKeyEnv):
                         goal_pos = (x, y)
                     else:
                         raise ValueError("Multiple goals found in the grid.")
-        
+
         if door is None:
             raise ValueError("Expected exactly one Door.")
 
