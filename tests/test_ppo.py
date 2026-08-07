@@ -164,15 +164,14 @@ def test_make_train_env_prunes_after_shaping():
     assert obs.shape == (7,)
 
 @pytest.mark.slow
-def test_train_reaches_competence():
-    model = train(
-        total_timesteps=200_000,
-        seed=0,
-        layout_seed=2,
-    )
-
+def test_trained_model_reaches_competence(trained_model):
     assert success_rate(
-        model,
+        trained_model,
         n_episodes=100,
         layout_seed=2,
     ) >= 0.95
+
+@pytest.mark.train
+def test_train_reaches_competence():
+    model = train(total_timesteps=200_000, seed=0, layout_seed=2)
+    assert success_rate(model, n_episodes=100, layout_seed=2) >= 0.95

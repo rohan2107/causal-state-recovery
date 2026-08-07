@@ -20,8 +20,8 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-markers = ["slow: needs PPO training"]
-addopts = "-m 'not slow'"
+markers = ["slow: needs a trained policy", "train: retrains from scratch"]
+addopts = "-m 'not slow and not train'"
 
 [tool.ruff]
 line-length = 100
