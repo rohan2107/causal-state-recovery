@@ -311,6 +311,7 @@ def test_run_baselines_detects_true_signal():
     assert "s2" in result["corr_selected"]
     assert "s4" not in result["corr_selected"]
 
+@pytest.mark.data
 @pytest.mark.skipif(
     not DATASET.exists(),
     reason="run scripts/build_dataset.py",
