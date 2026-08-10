@@ -149,7 +149,7 @@ def evaluate(
 
         logits = model(X)
 
-        pred = (logits >= 0).float()
+        pred = (logits >= 0).float().view_as(y)
 
         correct += (pred == y).sum().item()
 

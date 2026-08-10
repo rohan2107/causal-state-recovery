@@ -23,6 +23,21 @@ class GatedMLP(nn.Module):
         self.gate_logits = nn.Parameter(
             torch.full((len(ALL_VARS),), gate_init)
         )
+        col_to_var = [0] * in_dim
+
+        for i, var in enumerate(ALL_VARS):
+            sl = VAR_SLICES[var]
+
+            for column in range(sl.start, sl.stop):
+                col_to_var[column] = i
+
+        self.register_buffer(
+            "col_to_var",
+            torch.tensor(
+                col_to_var,
+                dtype=torch.long,
+            ),
+        )
 
         self.net = nn.Sequential(
             nn.Linear(in_dim, hidden),
@@ -33,14 +48,7 @@ class GatedMLP(nn.Module):
         )
 
     def _expanded_gate(self) -> Tensor:
-        gates = torch.sigmoid(self.gate_logits)
-        expanded = []
-        for i, var in enumerate(ALL_VARS):
-            sl = VAR_SLICES[var]
-            width = sl.stop - sl.start
-            for _ in range(width):
-                expanded.append(gates[i])
-        return torch.stack(expanded)
+        return torch.sigmoid(self.gate_logits)[self.col_to_var]
 
     def forward(self, x: Tensor) -> Tensor:
         gate = self._expanded_gate()
