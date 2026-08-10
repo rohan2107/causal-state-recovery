@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import numpy as np
 import torch
 from sklearn.preprocessing import StandardScaler
@@ -95,10 +97,12 @@ def train_mlp(
 
 
 def fit(
-    model: MLP,
+    model: nn.Module,
     train_loader: DataLoader,
+    *,
     epochs: int = 30,
     lr: float = 1e-3,
+    penalty: Callable[[nn.Module], torch.Tensor] | None = None,
 ) -> None:
 
     criterion = nn.BCEWithLogitsLoss()
@@ -122,6 +126,9 @@ def fit(
                 logits,
                 y,
             )
+
+            if penalty is not None:
+                loss = loss + penalty(model)
 
             loss.backward()
 

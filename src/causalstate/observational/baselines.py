@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.feature_selection import mutual_info_classif
 
-from causalstate.evaluation.metrics import recovery_score
+from causalstate.evaluation.metrics import recovery_score, select
 from causalstate.world.gridworld import CAUSAL_ORACLE, get_var
 
 SUMMARY_VARS = ("s1", "s2", "s4", "s5")
@@ -91,17 +91,6 @@ def mi_scores(
     return {
         var: float(score)
         for var, score in zip(SUMMARY_VARS, mi, strict=True)
-    }
-
-def select(
-    scores: dict[str, float],
-    threshold: float,
-) -> set[str]:
-
-    return {
-        var
-        for var, score in scores.items()
-        if score > threshold
     }
 
 def run_baselines(

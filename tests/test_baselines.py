@@ -4,13 +4,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from causalstate.evaluation.metrics import select
 from causalstate.observational.baselines import (
     SUMMARY_VARS,
     correlation_scores,
     episode_summaries,
     mi_scores,
     run_baselines,
-    select,
 )
 from causalstate.observational.dataset import load_split
 

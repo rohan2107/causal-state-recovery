@@ -46,3 +46,26 @@ def recovery_score(selected, oracle=CAUSAL_ORACLE) -> dict:
         "false_positives": sorted(fp),
         "false_negatives": sorted(fn),
     }
+
+def select(
+    scores: dict[str, float],
+    threshold: float,
+) -> set[str]:
+
+    return {
+        var
+        for var, score in scores.items()
+        if score > threshold
+    }
+
+def separation(
+    scores: dict[str, float],
+) -> float:
+    causal = [scores[var] for var in CAUSAL_ORACLE]
+    nuisance = [
+        scores[var]
+        for var in ALL_VARS
+        if var not in CAUSAL_ORACLE
+    ]
+
+    return min(causal) - max(nuisance)
