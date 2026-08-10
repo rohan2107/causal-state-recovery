@@ -15,6 +15,13 @@ from causalstate.observational.baselines import (
 from causalstate.observational.dataset import load_split
 
 DATASET = Path("data/observational/train.npz")
+VAL_DATASET = Path("data/observational/val.npz")
+TEST_DATASET = Path("data/observational/test.npz")
+OOD_DATASET = Path("data/observational/ood_test.npz")
+
+BASELINE_PROTOCOL = Path(
+    "data/observational/baseline_summaries_seed0.npz"
+)
 
 def make_split(obs, y, episode_id):
 
@@ -313,16 +320,21 @@ def test_run_baselines_detects_true_signal():
 
 @pytest.mark.data
 @pytest.mark.skipif(
-    not DATASET.exists(),
-    reason="run scripts/build_dataset.py",
+    not BASELINE_PROTOCOL.exists(),
+    reason="run scripts/build_baseline_summaries.py",
 )
-def test_baselines_on_train_split():
-
+def test_baselines_on_protocol_collection():
     result = run_baselines(
-        load_split(DATASET)
+        load_split(BASELINE_PROTOCOL)
     )
 
-    assert result["n_episodes"] == 420
+    assert result["n_episodes"] == 400
+
+    assert result["corr_selected"] == {
+        "s1",
+        "s2",
+        "s5",
+    }
 
     assert result["mi_selected"] == {
         "s1",
@@ -331,6 +343,27 @@ def test_baselines_on_train_split():
         "s5",
     }
 
-    assert "s4" not in result["corr_selected"]
+    assert result["correlation"]["s5"] > 0.1
 
-    assert result["correlation"]["s1"] > 0.7
+@pytest.mark.data
+@pytest.mark.skipif(
+    not DATASET.exists()
+    or not VAL_DATASET.exists()
+    or not TEST_DATASET.exists()
+    or not OOD_DATASET.exists(),
+    reason="run scripts/build_dataset.py",
+)
+def test_baselines_on_pooled_dataset_is_unstable():
+    splits = [
+        load_split(DATASET),
+        load_split(VAL_DATASET),
+        load_split(TEST_DATASET),
+        load_split(OOD_DATASET),
+    ]
+
+    masks = [
+        frozenset(run_baselines(split)["corr_selected"])
+        for split in splits
+    ]
+
+    assert len(set(masks)) > 1
