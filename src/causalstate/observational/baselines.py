@@ -14,6 +14,7 @@ MI_RANDOM_STATE = 0
 
 def episode_summaries(
     split: dict[str, np.ndarray],
+    max_steps: int | None = None
 ) -> tuple[np.ndarray, np.ndarray]:
 
     episode_ids = np.unique(split["episode_id"])
@@ -33,6 +34,9 @@ def episode_summaries(
         mask = split["episode_id"] == episode_id
 
         obs = split["obs"][mask]
+
+        if max_steps is not None:
+            obs = obs[:max_steps]
 
         y[i] = split["Y"][mask][0]
 
