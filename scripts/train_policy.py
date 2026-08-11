@@ -1,11 +1,8 @@
+import argparse
 from pathlib import Path
 
 from causalstate.agent.ppo import success_rate, train
 
-MODEL_PATH = Path("models/ppo_200k_rho07_seed0.zip")
-
-TOTAL_TIMESTEPS = 200_000
-SEED = 0
 LAYOUT_SEED = 2
 RHO = 0.7
 ENT_COEF = 0.05
@@ -14,13 +11,22 @@ EVAL_EPISODES = 50
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--timesteps", type=int, default=200_000)
+    args = parser.parse_args()
+
+    model_path = Path(
+        f"models/ppo_{args.timesteps // 1000}k_rho07_seed{args.seed}.zip"
+    )
+
     model = train(
-        total_timesteps=TOTAL_TIMESTEPS,
-        seed=SEED,
+        total_timesteps=args.timesteps,
+        seed=args.seed,
         layout_seed=LAYOUT_SEED,
         rho=RHO,
         prune=False,
-        save_path=MODEL_PATH,
+        save_path=model_path,
         ent_coef=ENT_COEF,
         eval_every=EVAL_EVERY,
         eval_episodes=EVAL_EPISODES,
@@ -36,13 +42,13 @@ def main() -> None:
     )
 
     print("=== PPO training ===")
-    print(f"timesteps: {TOTAL_TIMESTEPS}")
-    print(f"seed: {SEED}")
+    print(f"timesteps: {args.timesteps}")
+    print(f"seed: {args.seed}")
     print(f"layout_seed: {LAYOUT_SEED}")
     print(f"rho: {RHO}")
     print(f"ent_coef: {ENT_COEF}")
     print(f"success_rate: {final_success:.3f}")
-    print(f"model: {MODEL_PATH}")
+    print(f"model: {model_path}")
 
 
 if __name__ == "__main__":
