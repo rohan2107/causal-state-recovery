@@ -30,3 +30,4 @@ runs/
 *.fls
 /planning
 /tests/.cache
+models/
