@@ -125,7 +125,8 @@ def train(
     ent_coef=0.05,
     eval_every=25_000,
     eval_episodes=50,
-    **ppo_kwargs,
+    algo=PPO,
+    **algo_kwargs,
 ):
     env = make_train_env(
         layout_seed=layout_seed,
@@ -133,13 +134,17 @@ def train(
         prune=prune,
     )
 
-    model = PPO(
+    kwargs = dict(algo_kwargs)
+
+    if ent_coef is not None:
+        kwargs["ent_coef"] = ent_coef
+
+    model = algo(
         "MlpPolicy",
         env,
         seed=seed,
-        ent_coef=ent_coef,
-        **ppo_kwargs,
         verbose=0,
+        **kwargs,
     )
 
     best_rate = -1.0
