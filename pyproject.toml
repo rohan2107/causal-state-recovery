@@ -8,7 +8,7 @@ dependencies = ["numpy", "gymnasium", "minigrid", "stable-baselines3", "torch"]
 [project.optional-dependencies]
 baselines = ["scikit-learn"]   # mutual-information baseline
 ablations = ["sb3-contrib"]    # TRPO cross-algorithm check
-dev = ["pytest", "ruff", "scikit-learn"]
+dev = ["pytest", "ruff", "scikit-learn", "matplotlib"]
 
 [build-system]
 requires = ["setuptools>=61"]
