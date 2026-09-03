@@ -47,11 +47,15 @@ def rho_separation():
         label="CaSN",
     )
 
-    ax.axhline(0, linestyle="--", linewidth=0.8)
-    ax.axhline(
-        0.650,
+    ax.axhline(0, linestyle="--", linewidth=0.8, color="0.6")
+    ax.plot(
+        [0.0, 0.7, 1.0],
+        [0.650] * 3,
         linestyle=":",
-        linewidth=0.8,
+        linewidth=1.5,
+        color="black",
+        marker="^",
+        markersize=6,
         label="Replay-PN oracle",
     )
 
